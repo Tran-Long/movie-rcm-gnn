@@ -1,7 +1,7 @@
 import torch
 from torch_geometric.nn import MessagePassing
 from torch_geometric.nn.conv.gcn_conv import gcn_norm
-from utils import convert_adj_coo_to_itr_coo, get_user_positive_items, calculate_metrics
+from utils import convert_adj_coo_to_itr_coo, get_user_positive_items, calculate_metrics, calculate_metrics_contigous
 from torch_geometric.utils import structured_negative_sampling
 import lightning as L
 
@@ -88,12 +88,18 @@ class LightGCNModule(L.LightningModule):
         # Calculate metrics
         user_embs, item_embs = self.model.user_embeddings.weight, self.model.item_embeddings.weight
         score_matrix = user_embs @ item_embs.t()
-        precision, recall = calculate_metrics(
+        precision, recall = calculate_metrics_contigous(
             score_matrix,
             convert_adj_coo_to_itr_coo(val_edge_index, self.hparams.num_users, self.hparams.num_items),
             exclude_itr_edge_indices,
             self.hparams.k
         )
+        # precision, recall = calculate_metrics(
+        #     score_matrix,
+        #     convert_adj_coo_to_itr_coo(val_edge_index, self.hparams.num_users, self.hparams.num_items),
+        #     exclude_itr_edge_indices,
+        #     self.hparams.k
+        # )
         self.log('val_loss', loss, on_step=True, logger=True)
         self.log('val_precision', precision, on_step=True, logger=True)
         self.log('val_recall', recall, on_step=True, logger=True)

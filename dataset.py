@@ -7,6 +7,7 @@ import torch
 from torch_geometric.data import Dataset, Data, download_url
 from torch_geometric.utils import structured_negative_sampling
 from utils import convert_itr_coo_to_adj_coo
+from torch.utils.data import Sampler
 
 class TransformRatings:
     def __init__(self, threshold=3.5):
@@ -163,6 +164,34 @@ def sample_mini_batch(data, batch_size=32):
     user_indices, pos_item_indices, neg_item_indices = batch
     return user_indices, pos_item_indices, neg_item_indices
 
+class PredefinedMovieLensDataset:
+    def __init__(self, root):
+        train_file = osp.join(root, "train.txt")
+        val_file = osp.join(root, "test.txt")
+        train_edge_index, train_n_users, train_n_movies = self.read_text_file(train_file)
+        val_edge_index, val_n_users, val_n_movies = self.read_text_file(val_file)
+        self.n_users = max(train_n_users, val_n_users)
+        self.n_movies = max(train_n_movies, val_n_movies)
+        self.train_data = Data(edge_index=train_edge_index, n_users=self.n_users, n_movies=self.n_movies)
+        self.val_data = Data(edge_index=val_edge_index, n_users=self.n_users, n_movies=self.n_movies)
+
+    def read_text_file(self, file_path):
+        """
+        Read a text file and return the edge index.
+        """
+        users, items = [], []
+        with open(file_path, 'r') as f:
+            rows = f.readlines()
+        for row in rows:
+            ids = row.strip().split()
+            user = int(ids[0].strip())
+            for item in ids[1:]:
+                item = int(item.strip())
+                users.append(user)
+                items.append(item)
+        edge_index = torch.tensor([users, items], dtype=torch.long)
+        return edge_index, len(set(users)), len(set(items))
+
 class MovieLensDataloader:
     def __init__(self, data: Data, exclude_data: list[Data], batch_size=32, shuffle=True, exclude_sampling=False):
         self.batch_size = batch_size
@@ -173,6 +202,12 @@ class MovieLensDataloader:
         self.exclude_sampling = exclude_sampling
         self.itr_edge_index = self.data.edge_index
         self.adj_edge_index = convert_itr_coo_to_adj_coo(self.itr_edge_index, self.data.n_users, self.data.n_movies)
+
+    def __len__(self):
+        """
+        Return the number of batches in the dataset.
+        """
+        return (self.itr_edge_index.size(1) + self.batch_size - 1) // self.batch_size
 
     def __iter__(self):
         """

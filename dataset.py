@@ -8,7 +8,6 @@ from torch_geometric.data import Dataset, Data, download_url
 from torch_geometric.utils import structured_negative_sampling
 from utils import convert_itr_coo_to_adj_coo
 
-
 class TransformRatings:
     def __init__(self, threshold=3.5):
         """
@@ -184,7 +183,7 @@ class MovieLensDataloader:
         """
         indices = torch.randperm(self.itr_edge_index.size(1)) if self.shuffle else torch.arange(self.itr_edge_index.size(1))
         for start in range(0, len(indices), self.batch_size):
-            edges_w_neg = structured_negative_sampling(self.itr_edge_index, contains_neg_self_loops=False)
+            edges_w_neg = structured_negative_sampling(self.itr_edge_index, num_nodes=self.data.n_movies, contains_neg_self_loops=False)
             edges_w_neg = torch.stack(edges_w_neg, dim=0)
             end = min(start + self.batch_size, len(indices))
             batch_indices = indices[start:end]

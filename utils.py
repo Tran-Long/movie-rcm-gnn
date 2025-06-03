@@ -15,7 +15,7 @@ def convert_itr_coo_to_adj_coo(itr_coo, n_users, n_items):
 def convert_adj_coo_to_itr_coo(adj_coo, n_users, n_items):
     sparse_adj_mat = torch.sparse_coo_tensor(
         adj_coo, 
-        torch.ones(adj_coo.shape[1]), 
+        torch.ones(adj_coo.shape[1]).to(adj_coo.device), 
         (n_users + n_items, n_users + n_items)
     )
     adj_mat = sparse_adj_mat.to_dense()
@@ -51,4 +51,4 @@ def calculate_metrics(user_item_score, val_itr_coo, exclude_itr_coos, k):
         total_label += len(user_true_relevant_items)
     precision = true_positive / total_pred if total_pred > 0 else 0
     recall = true_positive / total_label if total_label > 0 else 0
-    return precision, recall
+    return precision * 100, recall * 100

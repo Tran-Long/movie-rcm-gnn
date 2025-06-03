@@ -70,7 +70,7 @@ class LightGCNModule(L.LightningModule):
             user_embs_init, pos_item_embs_init, neg_item_embs_init,
             self.lambda_val
         )
-        self.log('train_loss', loss)
+        self.log('train_loss', loss, on_step=True, logger=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -94,9 +94,9 @@ class LightGCNModule(L.LightningModule):
             exclude_itr_edge_indices,
             self.hparams.k
         )
-        self.log('val_loss', loss)
-        self.log('val_precision', precision)
-        self.log('val_recall', recall)
+        self.log('val_loss', loss, on_step=True, logger=True)
+        self.log('val_precision', precision, on_step=True, logger=True)
+        self.log('val_recall', recall, on_step=True, logger=True)
         return {'val_loss': loss, 'val_precision': precision, 'val_recall': recall}
 
     # def on_train_epoch_end(self):
